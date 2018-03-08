@@ -1,8 +1,25 @@
-:8080
-gzip
+:8080 {
+  gzip
 
-root push-client
+  root push-client  
 
-proxy /api localhost:8081 {
-  
+  rewrite /static {
+    r (.*)
+    to /admin/static{1}
+  }
+
+  basicauth /admin user password
+  proxy /admin localhost:8082 {
+    without /admin
+    }
+
+  basicauth /admin user password
+  proxy /api localhost:8099 {
+    without /api
+  }
 }
+
+:8082 {
+  root push-admin-page/build
+}
+
