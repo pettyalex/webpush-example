@@ -1,0 +1,8 @@
+:8080
+gzip
+
+root push-client
+
+proxy /api localhost:8081 {
+  
+}
