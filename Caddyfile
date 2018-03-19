@@ -13,7 +13,7 @@
     without /admin
     }
 
-  basicauth /admin user password
+  basicauth /api user password
   proxy /api localhost:8099 {
     without /api
   }

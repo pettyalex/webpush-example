@@ -1,9 +1,13 @@
-import * as React from 'react';
-import './App.css';
+import * as React from "react";
+import "./App.css";
 
-const logo = require('./logo.svg');
+const logo = require("./logo.svg");
 
-class App extends React.Component {
+interface State {
+  subscriptions: string[];
+}
+
+class App extends React.Component<{}, State> {
   render() {
     return (
       <div className="App">
@@ -17,6 +21,20 @@ class App extends React.Component {
       </div>
     );
   }
+
+  private async getSubscriptions() {
+    fetch();
+  }
 }
+
+interface SubscriptionProps {
+  subscription: {
+    name: string;
+  };
+}
+
+const SubscriptionCard: React.SFC<SubscriptionProps> = props => {
+  return <h1>{props.subscription.name} is subscribed</h1>;
+};
 
 export default App;
