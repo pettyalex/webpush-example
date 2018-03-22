@@ -1,13 +1,15 @@
 const restify = require("restify");
 const webpush = require("web-push");
 
-const privateKey = process.env.PRIVATE_KEY || "fake_private_key";
-const publicKey = process.env.PUBLIC_KEY || "fake_public_key";
+const vapidKeys = webpush.generateVAPIDKeys();
+
+const privateKey = process.env.PRIVATE_KEY || vapidKeys.privateKey;
+const publicKey = process.env.PUBLIC_KEY || vapidKeys.publicKey;
 const vapidSubject = process.env.VAPID_SUBJECT || "mailto:example@example.com";
 
 const subscriptions = [];
 
-// webpush.setVapidDetails(vapidSubject, privateKey, publicKey);
+webpush.setVapidDetails(vapidSubject, publicKey, privateKey);
 
 function respond(req, res, next) {
   res.send("hello " + req.params.name);
@@ -27,8 +29,8 @@ server.get("publicKey", (req, res, next) => {
 
 server.post("subscribe", (req, res, next) => {
   console.log("got a message");
-  console.log(`subscriptions is ${JSON.stringify(subscriptions)}`);
   subscriptions.push(req.body);
+  console.log(`subscriptions is ${JSON.stringify(subscriptions)}`);
   res.send("got a new subscription: " + JSON.stringify(req.body));
   next();
 });
@@ -38,13 +40,19 @@ server.get("subscriptions", (req, res, next) => {
   next();
 });
 
-server.post("sendMessageToAll", (req, res, next) => {
-  subscriptions.forEach(wrappedSubscription => {
-    webpush.sendNotification(
-      wrappedSubscription.subscription,
-      req.body.message
-    );
-  });
+server.post("sendMessageToAll", async (req, res, next) => {
+  for (let i = 0; i < subscriptions.length; i++) {
+    try {
+      await webpush.sendNotification(
+        subscriptions[i].subscription,
+        req.body.message
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  res.send(200);
+  next();
 });
 
 server.post("sendMessage", (req, res, next) => {
@@ -58,6 +66,6 @@ server.post("sendMessage", (req, res, next) => {
   });
 });
 
-server.server.listen(8080, function() {
+server.server.listen(8089, function() {
   console.log("%s listening at %s", server.name, server.url);
 });

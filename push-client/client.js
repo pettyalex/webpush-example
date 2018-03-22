@@ -1,21 +1,31 @@
 window.onload = doStuff;
 
 let registration;
+let publicKey;
+let nameInput;
 
 async function doStuff() {
   registration = registerServiceWorker();
   document.getElementById("submitButton").onclick = subscribe;
+  document.getElementById("unsubscribeButton").onclick = unsubscribe;
+  nameInput = document.getElementById("nameInput");
 
-  const publicKey = await (await fetch(
-    "http://localhost:8001/getPublicKey"
-  )).text();
+  publicKey = await (await fetch("api/publicKey")).json();
   document.getElementById("key").innerHTML = publicKey;
+}
+
+async function unsubscribe() {
+  const reg = await navigator.serviceWorker.register("service-worker.js");
+  const subscription = await reg.pushManager.getSubscription();
+  await subscription.unsubscribe();
+  addMessageToBody(`UNSUBSCRIBED`);
 }
 
 async function subscribe() {
   try {
     await askPermission();
     const subscription = await subscribeUserToPush();
+    addMessageToBody(`SUBSCRIBING: ${JSON.stringify(subscription)}`);
     await sendSubscriptionToBackEnd(subscription);
     addMessageToBody("DONE SUBSCRIBING!");
   } catch (error) {
@@ -63,9 +73,7 @@ function subscribeUserToPush() {
     .then(function(registration) {
       const subscribeOptions = {
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(
-          "BHkLurGX6RXGkMRAvpaDSn_P8_GakpYl_WSaoGi5CzUeO44uBf0FRe6_m0Os4lS6JQwlDtu3Hm1kGTuDIRRzL7Y"
-        )
+        applicationServerKey: urlBase64ToUint8Array(publicKey)
       };
 
       return registration.pushManager.subscribe(subscribeOptions);
@@ -80,23 +88,27 @@ function subscribeUserToPush() {
 }
 
 function sendSubscriptionToBackEnd(subscription) {
-  return fetch("/api/save-subscription/", {
+  const wrappedSubscription = {
+    name: nameInput.value,
+    subscription: subscription
+  };
+  return fetch("/api/subscribe", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify(subscription)
+    body: JSON.stringify(wrappedSubscription)
   })
     .then(function(response) {
       if (!response.ok) {
-        throw new Error("Bad status code from server.");
+        throw new Error(`Error: ${response.status} from server`);
       }
 
       return response.json();
     })
     .then(function(responseData) {
-      if (!(responseData.data && responseData.data.success)) {
-        throw new Error("Bad response from server.");
+      if (!responseData) {
+        throw new Error("Empty response from server");
       }
     });
 }

@@ -8,6 +8,12 @@ interface State {
 }
 
 class App extends React.Component<{}, State> {
+  private messageInput: HTMLInputElement | null;
+  constructor(props: {}) {
+    super(props);
+    this.sendMessage = this.sendMessage.bind(this);
+  }
+
   render() {
     return (
       <div className="App">
@@ -18,12 +24,15 @@ class App extends React.Component<{}, State> {
         <p className="App-intro">
           To get started, edit <code>src/App.tsx</code> and save to reload.
         </p>
+        <label>SEND A MESAGE</label>
+        <input type="text" ref={i => (this.messageInput = i)} />
+        <button onClick={this.sendMessage}>SEND DAT MESSAGE</button>
       </div>
     );
   }
 
-  private async getSubscriptions() {
-    fetch();
+  private async sendMessage() {
+    console.log(this.messageInput!.value);
   }
 }
 
